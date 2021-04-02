@@ -2,8 +2,8 @@ const test_frame = (origin, hints, allow, message, url = "/client-hints/resource
   promise_test(() => {
     return new Promise((resolve, reject) => {
       let frame = document.createElement('iframe');
-      frame.src = get_host_info()[origin] + url + hints;
       frame.allow = allow;
+      frame.src = get_host_info()[origin] + url + hints;
       window.addEventListener('message', function(e) {
         try {
           assert_equals(typeof e.data, "string");
