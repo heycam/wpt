@@ -1,0 +1,65 @@
+<!doctype html>
+<meta name="timeout" content="long">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<div id="log"></div>
+<script>
+const localStoragePrefix = 'BFCache.test.';
+
+function clearData() {
+  const keysToBeRemoved = [];
+  for (let i = 0; i < localStorage.length; ++i) {
+    const key = localStorage.key(i);
+    if (key.startsWith(localStoragePrefix)) {
+      keysToBeRemoved.push(key);
+    }
+  }
+  for (const key of keysToBeRemoved) {
+    localStorage.removeItem(key);
+    console.log(key);
+  }
+}
+
+function getData(name) {
+  return localStorage.getItem(localStoragePrefix + name);
+}
+
+function setData(name, value) {
+  localStorage.setItem(localStoragePrefix + name, value);
+}
+
+function pushData(name, value) {
+  const old = getData(name);
+  let newArray;
+  if (!old) {
+    newArray = [value];
+  } else {
+    newArray = JSON.parse(old);
+    newArray.push(value);
+  }
+  setData(name, JSON.stringify(newArray));
+}
+
+const t = async_test();
+
+clearData();
+window.open('test.sub.html', '_blank', 'noopener');
+
+setInterval(t.step_func(() => {
+    const result = getData('result');
+    if (result) {
+      assert_array_equals(JSON.parse(result), [
+          'window.pagehide.persisted',
+          'document.visibilitychange',
+          'window.visibilitychange',
+          // document.freeze/resume are not fired on Firefox.
+          // 'document.freeze',
+          // 'document.resume',
+          'document.visibilitychange',
+          'window.visibilitychange',
+          'window.pageshow.persisted']);
+      t.done();
+    }
+  }),
+  1000);
+</script>
