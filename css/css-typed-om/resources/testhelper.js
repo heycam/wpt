@@ -1,3 +1,31 @@
+function assert_color_channel_approx_equals(a, b) {
+  // Color is is limited to 32bit RGBA, thus channels are values within 0-255.
+  // Our epsilon needs to reflect this relatively limited precision.
+  const EPSILON = 1/255;
+
+  function epsilonForUnitType(unitType) {
+    switch(unitType) {
+      case "deg":
+        return EPSILON * 360;
+        break;
+      case "rad":
+        return EPSILON * 2 * Math.PI;
+        break;
+      case "grad":
+        return EPSILON * 400;
+        break;
+      case "percent":
+        return EPSILON * 400;
+        break;
+      default:
+        return EPSILON;
+    }
+  }
+
+  assert_approx_equals(a.value, b.value, epsilonForUnitType(a.unit));
+  assert_equals(a.unit, b.unit);
+}
+
 // Compares two CSSStyleValues to check if they're the same type
 // and have the same attributes.
 function assert_style_value_equals(a, b) {

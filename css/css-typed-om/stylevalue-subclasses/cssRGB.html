@@ -1,0 +1,102 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSSColorValue tests</title>
+<link rel="help" href="https://drafts.css-houdini.org/css-typed-om-1/#csscolorvalue">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../resources/testhelper.js"></script>
+<script>
+'use strict';
+
+const gInvalidColorTestCases = [
+  { color: CSS.deg(1), desc: 'an angle CSSUnitValue'},
+  { color: new CSSMathSum(CSS.px(1)), desc: 'a CSSMathValue that doesn\'t match <number>'},
+  { color: undefined, desc: 'undefined'},
+];
+
+for (const {color, desc} of gInvalidColorTestCases) {
+  test(() => {
+    assert_throws_js(TypeError, () => new CSSRGB(color, 0, 0));
+    assert_throws_js(TypeError, () => new CSSRGB(0, color, 0));
+    assert_throws_js(TypeError, () => new CSSRGB(0, 0, color));
+    assert_throws_js(TypeError, () => new CSSRGB(color, 0, 0, 0));
+    assert_throws_js(TypeError, () => new CSSRGB(0, color, 0, 0));
+    assert_throws_js(TypeError, () => new CSSRGB(0, 0, color, 0));
+    // Alpha has a default value and works with undefined
+    if (color) assert_throws_js(TypeError, () => new CSSRGB(0, 0, 0, color));
+  }, 'Constructing a CSSRGB with ' + desc + ' for the color channels throws a TypeError.');
+}
+
+for (const attr of ['r', 'g', 'b', 'alpha']) {
+  for (const {value, desc} of gInvalidColorTestCases) {
+    test(() => {
+      let result = new CSSRGB(0, 0, 0, 0);
+      assert_throws_js(TypeError, () => result[attr] = value);
+      assert_style_value_equals(result[attr], CSS.percent(0));
+    }, 'Updating CSSRGB.' + attr + ' to ' + desc + ' throws a TypeError.');
+  }
+}
+
+test(() => {
+  const result = new CSSRGB(0.5, CSS.number(0.7), CSS.percent(91));
+  assert_color_channel_approx_equals(result.r, CSS.percent(50));
+  assert_color_channel_approx_equals(result.g, CSS.percent(70));
+  assert_color_channel_approx_equals(result.b, CSS.percent(91));
+  assert_color_channel_approx_equals(result.alpha, CSS.percent(100));
+}, 'CSSRGB can be constructed from three numbers and will get an alpha of 100%.');
+
+test(() => {
+  const result = new CSSRGB(0.101, CSS.number(0.2), 0.3, CSS.percent(0.4));
+  assert_color_channel_approx_equals(result.r, CSS.percent(10.1));
+  assert_color_channel_approx_equals(result.g, CSS.percent(20));
+  assert_color_channel_approx_equals(result.b, CSS.percent(30));
+  assert_color_channel_approx_equals(result.alpha, CSS.percent(0.4));
+}, 'CSSRGB can be constructed from four numbers.');
+
+test(() => {
+  const result = new CSSRGB(-1, CSS.number(3.5), -4.1, CSS.number(-5));
+  assert_color_channel_approx_equals(result.r, CSS.percent(0));
+  assert_color_channel_approx_equals(result.g, CSS.percent(100));
+  assert_color_channel_approx_equals(result.b, CSS.percent(0));
+  assert_color_channel_approx_equals(result.alpha, CSS.percent(0));
+  result.r = CSS.percent(500);
+  result.g = -1;
+  assert_color_channel_approx_equals(result.r, CSS.percent(100));
+  assert_color_channel_approx_equals(result.g, CSS.percent(0));
+}, 'CSSRGB constructor clamps between 0 and 100%.');
+
+for (const attr of ['r', 'g', 'b', 'alpha']) {
+  test(() => {
+    let result = new CSSRGB(0, 0, 0);
+    result[attr] = 0.5;
+    assert_color_channel_approx_equals(result[attr], CSS.percent(50));
+  }, 'CSSRGB.' + attr + ' can be updated to a number.');
+
+  test(() => {
+    let result = new CSSRGB(0, 0, 0);
+    result[attr] = CSS.number(0.5);
+    assert_color_channel_approx_equals(result[attr], CSS.percent(50));
+  }, 'CSSRGB.' + attr + ' can be updated to a numberish.');
+
+  test(() => {
+    let result = new CSSRGB(0, 0, 0);
+    result[attr] = CSS.percent(50);
+    assert_color_channel_approx_equals(result[attr], CSS.percent(50));
+  }, 'CSSRGB.' + attr + ' can be updated with a CSS percent.');
+}
+
+test(() => {
+  const color = new CSSRGB(1, 0.5, 0.3);
+  let result = color.toRGB();
+  assert_color_channel_approx_equals(result.r, CSS.percent(100));
+  assert_color_channel_approx_equals(result.g, CSS.percent(50));
+  assert_color_channel_approx_equals(result.b, CSS.percent(30));
+  assert_color_channel_approx_equals(result.alpha, CSS.percent(100));
+  for (const attr of ['r', 'g', 'b', 'alpha']) {
+    color[attr] = 0.7;
+    result = color.toRGB();
+    assert_color_channel_approx_equals(result[attr], CSS.percent(70));
+  }
+}, "toRGB() function works as expected and values can be updated.");
+
+</script>
